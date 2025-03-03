@@ -30,6 +30,110 @@ local boxColor = Color3.fromRGB(255, 255, 255)
 local chamFillColor = Color3.fromRGB(175, 25, 255)
 local chamOutlineColor = Color3.fromRGB(255, 255, 255)
 local fovColor = Color3.fromRGB(255, 255, 255)
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local aimbotKeybind = Enum.KeyCode.Q
+local aimbotHolding = false
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+local freecamEnabled = false
+local cameraOffset = Vector3.new(0, 5, 10)
+local mouseDelta = Vector2.new(0, 0)
+local mouseMovementConnection
+local moveSpeed = 0.5
+local rotationSpeed = 0.001
+local rotationSpeedQ = 0.001
+
+local function onMouseMove(input)
+    if freecamEnabled and input.UserInputType == Enum.UserInputType.MouseMovement then
+        mouseDelta = input.Delta
+    end
+end
+
+local function enableFreecam()
+    if not freecamEnabled then
+        freecamEnabled = true
+        Camera.CameraType = Enum.CameraType.Scriptable
+        Camera.CFrame = humanoidRootPart.CFrame * CFrame.new(cameraOffset)
+        
+        -- Desabilitar movimentação do personagem
+        if humanoid then
+            humanoid.WalkSpeed = 0
+            humanoid.JumpPower = 0
+            humanoid.PlatformStand = true -- Evita que o personagem se mova ou pule
+        end
+        
+        -- Bloqueia a entrada das teclas de movimento (W, A, S, D)
+        UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+            if freecamEnabled and not gameProcessedEvent then
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
+                        input:Stop() -- Bloqueia as teclas de movimento
+                    end
+                end
+            end
+        end)
+
+        mouseMovementConnection = UserInputService.InputChanged:Connect(onMouseMove)
+        
+        RunService.RenderStepped:Connect(function()
+            if freecamEnabled then
+                local moveDirection = Vector3.new(0, 0, 0)
+                -- Movimenta a câmera com W, A, S, D
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + Vector3.new(0, 0, -1) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection + Vector3.new(0, 0, 1) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection + Vector3.new(-1, 0, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDirection = moveDirection + Vector3.new(1, 0, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection = moveDirection + Vector3.new(0, -1, 0) end
+                
+                Camera.CFrame = Camera.CFrame * CFrame.new(moveDirection * moveSpeed)
+                
+                -- Movimentação da câmera para rotação com Q e E
+                if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+                    Camera.CFrame = Camera.CFrame * CFrame.Angles(0, rotationSpeedQ, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.E) then
+                    Camera.CFrame = Camera.CFrame * CFrame.Angles(0, -rotationSpeedQ, 0)
+                end
+                
+                -- Controle da rotação com o mouse
+                if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+                    local sensitivity = 0.1
+                    local yaw = CFrame.Angles(0, -mouseDelta.X * sensitivity, 0)
+                    local pitch = CFrame.Angles(-mouseDelta.Y * sensitivity, 0, 0)
+                    Camera.CFrame = Camera.CFrame * yaw * pitch
+                    mouseDelta = Vector2.new(0, 0)
+                end
+            end
+        end)
+    end
+end
+
+local function disableFreecam()
+    freecamEnabled = false
+    Camera.CameraType = Enum.CameraType.Custom
+    Camera.CFrame = humanoidRootPart.CFrame
+    if mouseMovementConnection then
+        mouseMovementConnection:Disconnect()
+    end
+    if humanoid then
+        humanoid.WalkSpeed = 16
+        humanoid.JumpPower = 50
+        humanoid.PlatformStand = false -- Restaura o movimento normal do personagem
+    end
+end
 
 
 -- Funções para Box ESP
@@ -180,13 +284,16 @@ function updateFovCircle()
     fovCircle.Color = fovColor -- Garante que a cor seja atualizada
 end
 
--- Função de Aimbot (atualizada com a distância máxima e verificação de equipe)
+
+
+-- Modificar a função enableAimbot para:
 function enableAimbot(state)
     aimbotEnabled = state
     fovCircle.Visible = state
+    
     if aimbotEnabled then
         game:GetService("RunService").RenderStepped:Connect(function()
-            if aimbotEnabled then
+            if aimbotEnabled and aimbotHolding then  -- Só ativa quando segurando a bind
                 local camera = workspace.CurrentCamera
                 local closestTarget = nil
                 local shortestDistance = math.huge
@@ -354,9 +461,49 @@ local Section = Tab:AddSection({
 })
 
 local ConfigTab = Window:MakeTab({
-    Name = "Config",
+    Name = "Misc",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
+})
+
+
+
+local Section = ConfigTab:AddSection({
+    Name = "Freecam"
+})
+
+ConfigTab:AddToggle({
+    Name = "Ativar Freecam",
+    Default = false,
+    Callback = function(value)
+        if value then
+            enableFreecam()
+        else
+            disableFreecam()
+        end
+    end
+})
+
+ConfigTab:AddSlider({
+    Name = "Velocidade Freecam",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Increment = 1,
+    Callback = function(value)
+        moveSpeed = value
+    end
+})
+
+ConfigTab:AddSlider({
+    Name = "Velocidade Rotação (Q / E)",
+    Min = 0.01,
+    Max = 0.1,
+    Default = 0.01,
+    Increment = 0.001,
+    Callback = function(value)
+        rotationSpeedQ = value
+    end
 })
 
 local Section = ConfigTab:AddSection({
@@ -369,6 +516,9 @@ ConfigTab:AddButton({
         loadstring(game:HttpGet(('https://raw.githubusercontent.com/japa777666/japaini3333/refs/heads/main/README.md')))() 
     end
 })
+
+
+
 
 Tab:AddToggle({
     Name = "Voar",
@@ -495,10 +645,10 @@ WallTab:AddToggle({
 WallTab:AddSlider({
     Name = "Tamanho das Nametags",
     Min = 10,
-    Max = 30,
-    Default = 17.5,
+    Max = 35,
+    Default = 15,
     Color = Color3.fromRGB(119, 18, 169),
-    Increment = 0.5,
+    Increment = 1,
     ValueName = "Tamanho",
     Callback = function(Value)
         nameTagSize = Value
@@ -552,7 +702,7 @@ AimbotTab:AddToggle({
 -- Corrigir os Sliders
 AimbotTab:AddSlider({
     Name = "Aimbot Fov",
-    Min = 10,
+    Min = 50,
     Max = 500,
     Default = 100,
     Color = Color3.fromRGB(119, 18, 169),
@@ -566,14 +716,24 @@ AimbotTab:AddSlider({
 
 AimbotTab:AddSlider({
     Name = "Aimbot Distance",
-    Min = 10,
-    Max = 2000,
+    Min = 50,
+    Max = 500,
     Default = 100,
     Color = Color3.fromRGB(119, 18, 169),
     Increment = 1,
     ValueName = "Distance",
     Callback = function(Value)
         aimDistance = Value
+    end
+})
+
+-- Na seção AimbotTab, adicione:
+AimbotTab:AddBind({
+    Name = "Bind Aimbot (Segurar)",
+    Default = Enum.KeyCode.Q,
+    Hold = true,
+    Callback = function(value)
+        aimbotHolding = value
     end
 })
 
