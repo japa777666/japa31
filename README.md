@@ -556,19 +556,7 @@ local function SpectatePlayer()
     end)
 end
 
--- Atualizar o slider na UI
-PlayersTab:AddSlider({
-    Name = "Distância da Câmera",
-    Min = 0, -- 0 = Dentro da cabeça
-    Max = 50,
-    Default = 0,
-    Color = Color3.fromRGB(119, 18, 169),
-    Increment = 1,
-    ValueName = "Metros",
-    Callback = function(value)
-        spectateDistance = value
-    end
-})
+
 
 -- Adicione esta nova versão:
 local qDown = false
@@ -604,6 +592,16 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
+PlayersTab:AddButton({
+    Name = "Teleportar para Player",
+    Callback = function()
+        if selectedPlayer and selectedPlayer.Character then
+            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+        end
+    end
+})
+
 -- Atualizar o toggle de espectar
 PlayersTab:AddToggle({
     Name = "Espectar Player",
@@ -623,28 +621,22 @@ PlayersTab:AddToggle({
     end
 })
 
+
+
+-- Atualizar o slider na UI
 PlayersTab:AddSlider({
     Name = "Distância da Câmera",
-    Min = 5,
+    Min = 0, -- 0 = Dentro da cabeça
     Max = 50,
-    Default = 10,
+    Default = 0,
     Color = Color3.fromRGB(119, 18, 169),
     Increment = 1,
-    ValueName = "Distância",
+    ValueName = "Metros",
     Callback = function(value)
         spectateDistance = value
     end
 })
 
-PlayersTab:AddButton({
-    Name = "Teleportar para Player",
-    Callback = function()
-        if selectedPlayer and selectedPlayer.Character then
-            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-        end
-    end
-})
 
 local mainSection = PlayersTab:AddSection({Name = "Lista de Jogadores"})
 
