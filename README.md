@@ -486,7 +486,7 @@ ConfigTab:AddToggle({
 
 ConfigTab:AddSlider({
     Name = "Velocidade Freecam",
-    Min = 1,
+    Min = 0.5,
     Max = 5,
     Default = 1,
     Increment = 1,
