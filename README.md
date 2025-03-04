@@ -460,293 +460,6 @@ local Section = Tab:AddSection({
     Name = "Self"
 })
 
-local ConfigTab = Window:MakeTab({
-    Name = "Misc",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-
-
-local Section = ConfigTab:AddSection({
-    Name = "Freecam"
-})
-
-ConfigTab:AddToggle({
-    Name = "Ativar Freecam",
-    Default = false,
-    Callback = function(value)
-        if value then
-            enableFreecam()
-        else
-            disableFreecam()
-        end
-    end
-})
-
-ConfigTab:AddSlider({
-    Name = "Velocidade Freecam",
-    Min = 0.5,
-    Max = 5,
-    Default = 1,
-    Increment = 0.5,
-    Callback = function(value)
-        moveSpeed = value
-    end
-})
-
-ConfigTab:AddSlider({
-    Name = "Velocidade Rotação (Q / E)",
-    Min = 0.01,
-    Max = 0.1,
-    Default = 0.01,
-    Increment = 0.001,
-    Callback = function(value)
-        rotationSpeedQ = value
-    end
-})
-
-local Section = ConfigTab:AddSection({
-    Name = "Configurações"
-})
-
-ConfigTab:AddButton({
-    Name = "Voltar Ao Menu Principal",
-    Callback = function()
-        loadstring(game:HttpGet(('https://raw.githubusercontent.com/japa777666/japaini3333/refs/heads/main/README.md')))() 
-    end
-})
-
-
-
-
-Tab:AddToggle({
-    Name = "Voar",
-    Default = false,
-    Callback = function(Value)
-        flyEnabled = Value
-        if not flyEnabled then
-            isFlying = false
-            disableFly()
-        end
-    end    
-})
-
-Tab:AddSlider({
-    Name = "Velocidade",
-    Min = 20,
-    Max = 500,
-    Default = 20,
-    Color = Color3.fromRGB(119, 18, 169),
-    Increment = 1,
-    ValueName = "Velocidade",
-    Callback = function(Value)
-        speed = Value
-    end    
-})
-
-Tab:AddBind({
-    Name = "Bind Voar",
-    Default = Enum.KeyCode.E,
-    Hold = false,
-    Callback = function()
-        if flyEnabled then
-            isFlying = not isFlying
-            if isFlying then
-                enableFly()
-            else
-                disableFly()
-            end
-        end
-    end    
-})
-
-function esp(enabled)
-    if not enabled then
-        if game.CoreGui:FindFirstChild("Highlight_Storage") then
-            game.CoreGui.Highlight_Storage:Destroy()
-        end
-        return
-    end
-
-    -- Usar variáveis globais para as cores
-    local FillColor = chamFillColor
-    local OutlineColor = chamOutlineColor
-
-    local DepthMode = "AlwaysOnTop"
-    local FillTransparency = 0.5
-    local OutlineTransparency = 0
-
-    local CoreGui = game:FindService("CoreGui")
-    local Players = game:FindService("Players")
-    local lp = Players.LocalPlayer
-    local connections = {}
-
-    local Storage = Instance.new("Folder")
-    Storage.Parent = CoreGui
-    Storage.Name = "Highlight_Storage"
-
-    local function Highlight(plr)
-        local Highlight = Instance.new("Highlight")
-        Highlight.Name = plr.Name
-        Highlight.FillColor = FillColor
-        Highlight.DepthMode = DepthMode
-        Highlight.FillTransparency = FillTransparency
-        Highlight.OutlineColor = OutlineColor
-        Highlight.OutlineTransparency = OutlineTransparency
-        Highlight.Parent = Storage
-        
-        local plrchar = plr.Character
-        if plrchar then
-            Highlight.Adornee = plrchar
-        end
-
-        connections[plr] = plr.CharacterAdded:Connect(function(char)
-            Highlight.Adornee = char
-        end)
-    end
-
-    Players.PlayerAdded:Connect(Highlight)
-    for i, v in next, Players:GetPlayers() do
-        if v ~= lp then
-            Highlight(v)
-        end
-    end
-
-    Players.PlayerRemoving:Connect(function(plr)
-        local plrname = plr.Name
-        if Storage:FindFirstChild(plrname) then
-            Storage[plrname]:Destroy()
-        end
-        if connections[plr] then
-            connections[plr]:Disconnect()
-        end
-    end)
-end
-
-
--- Corrigir os Toggles
-WallTab:AddToggle({
-    Name = "Nametags",
-    Default = false,
-    Callback = function(Value)
-        ToggleNameTags(Value) -- Corrigido para usar Value
-    end
-})
-
-WallTab:AddToggle({
-    Name = "Box",
-    Default = false,
-    Callback = function(Value)
-        ToggleBoxESP(Value) -- Corrigido para usar Value
-    end
-})
-
-WallTab:AddSlider({
-    Name = "Tamanho das Nametags",
-    Min = 10,
-    Max = 35,
-    Default = 15,
-    Color = Color3.fromRGB(119, 18, 169),
-    Increment = 1,
-    ValueName = "Tamanho",
-    Callback = function(Value)
-        nameTagSize = Value
-        -- Atualizar nametags existentes
-        for playerName, nametag in pairs(NameTags) do
-            nametag.Size = Value
-        end
-    end
-})
-
-WallTab:AddColorpicker({
-    Name = "Cor Do Esp",
-    Default = Color3.new(1, 1, 1),
-    Callback = function(Value)
-        -- Atualizar cores
-        nameTagColor = Value
-        boxColor = Value
-        
-        -- Atualizar nametags
-        for _, nametag in pairs(NameTags) do
-            nametag.Color = Value
-        end
-        
-        -- Atualizar boxes
-        for _, box in pairs(ESPObjects) do
-            box.Color = Value
-        end
-        
-        -- Atualizar Chams
-        chamFillColor = Value
-        if game.CoreGui:FindFirstChild("Highlight_Storage") then
-            for _, highlight in pairs(game.CoreGui.Highlight_Storage:GetChildren()) do
-                if highlight:IsA("Highlight") then
-                    highlight.FillColor = Value
-                    highlight.OutlineColor = Value
-                end
-            end
-        end
-    end
-})
-
--- Corrigir o Toggle do Aimbot
-AimbotTab:AddToggle({
-    Name = "Aimbot",
-    Default = false,
-    Callback = function(Value)
-        enableAimbot(Value) -- Chamar a função correta
-    end
-})
-
--- Corrigir os Sliders
-AimbotTab:AddSlider({
-    Name = "Aimbot Fov",
-    Min = 50,
-    Max = 500,
-    Default = 100,
-    Color = Color3.fromRGB(119, 18, 169),
-    Increment = 1,
-    ValueName = "FOV",
-    Callback = function(Value)
-        fovSize = Value
-        updateFovCircle()
-    end
-})
-
-AimbotTab:AddSlider({
-    Name = "Aimbot Distance",
-    Min = 50,
-    Max = 500,
-    Default = 100,
-    Color = Color3.fromRGB(119, 18, 169),
-    Increment = 1,
-    ValueName = "Distance",
-    Callback = function(Value)
-        aimDistance = Value
-    end
-})
-
--- Na seção AimbotTab, adicione:
-AimbotTab:AddBind({
-    Name = "Bind Aimbot (Segurar)",
-    Default = Enum.KeyCode.Q,
-    Hold = true,
-    Callback = function(value)
-        aimbotHolding = value
-    end
-})
-
--- Na seção Aimbot (adicionar após os sliders existentes)
-AimbotTab:AddColorpicker({
-    Name = "Cor do FOV",
-    Default = Color3.new(1, 1, 1),
-    Callback = function(Value)
-        fovColor = Value
-        fovCircle.Color = Value
-    end
-})
-
 -- Adicionar no início com as outras variáveis
 local spectatingPlayer = nil
 local spectateEnabled = false
@@ -941,6 +654,297 @@ UpdatePlayerList()
 -- Observador para novos jogadores
 game.Players.PlayerAdded:Connect(UpdatePlayerList)
 game.Players.PlayerRemoving:Connect(UpdatePlayerList)
+
+local ConfigTab = Window:MakeTab({
+    Name = "Misc",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+
+
+local Section = ConfigTab:AddSection({
+    Name = "Freecam"
+})
+
+ConfigTab:AddToggle({
+    Name = "Ativar Freecam",
+    Default = false,
+    Callback = function(value)
+        if value then
+            enableFreecam()
+        else
+            disableFreecam()
+        end
+    end
+})
+
+ConfigTab:AddSlider({
+    Name = "Velocidade Freecam",
+    Min = 0.5,
+    Max = 5,
+    Default = 1,
+    Increment = 0.5,
+    Callback = function(value)
+        moveSpeed = value
+    end
+})
+
+ConfigTab:AddSlider({
+    Name = "Velocidade Rotação (Q / E)",
+    Min = 0.01,
+    Max = 0.1,
+    Default = 0.01,
+    Increment = 0.001,
+    Callback = function(value)
+        rotationSpeedQ = value
+    end
+})
+
+local Section = ConfigTab:AddSection({
+    Name = "Configurações"
+})
+
+ConfigTab:AddButton({
+    Name = "Voltar Ao Menu Principal",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/japa777666/japaini3333/refs/heads/main/README.md')))() 
+    end
+})
+
+
+
+
+Tab:AddToggle({
+    Name = "Voar",
+    Default = false,
+    Callback = function(Value)
+        flyEnabled = Value
+        if not flyEnabled then
+            isFlying = false
+            disableFly()
+        end
+    end    
+})
+
+Tab:AddBind({
+    Name = "Bind Voar",
+    Default = Enum.KeyCode.E,
+    Hold = false,
+    Callback = function()
+        if flyEnabled then
+            isFlying = not isFlying
+            if isFlying then
+                enableFly()
+            else
+                disableFly()
+            end
+        end
+    end    
+})
+
+Tab:AddSlider({
+    Name = "Velocidade",
+    Min = 20,
+    Max = 500,
+    Default = 20,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "Velocidade",
+    Callback = function(Value)
+        speed = Value
+    end    
+})
+
+
+
+function esp(enabled)
+    if not enabled then
+        if game.CoreGui:FindFirstChild("Highlight_Storage") then
+            game.CoreGui.Highlight_Storage:Destroy()
+        end
+        return
+    end
+
+    -- Usar variáveis globais para as cores
+    local FillColor = chamFillColor
+    local OutlineColor = chamOutlineColor
+
+    local DepthMode = "AlwaysOnTop"
+    local FillTransparency = 0.5
+    local OutlineTransparency = 0
+
+    local CoreGui = game:FindService("CoreGui")
+    local Players = game:FindService("Players")
+    local lp = Players.LocalPlayer
+    local connections = {}
+
+    local Storage = Instance.new("Folder")
+    Storage.Parent = CoreGui
+    Storage.Name = "Highlight_Storage"
+
+    local function Highlight(plr)
+        local Highlight = Instance.new("Highlight")
+        Highlight.Name = plr.Name
+        Highlight.FillColor = FillColor
+        Highlight.DepthMode = DepthMode
+        Highlight.FillTransparency = FillTransparency
+        Highlight.OutlineColor = OutlineColor
+        Highlight.OutlineTransparency = OutlineTransparency
+        Highlight.Parent = Storage
+        
+        local plrchar = plr.Character
+        if plrchar then
+            Highlight.Adornee = plrchar
+        end
+
+        connections[plr] = plr.CharacterAdded:Connect(function(char)
+            Highlight.Adornee = char
+        end)
+    end
+
+    Players.PlayerAdded:Connect(Highlight)
+    for i, v in next, Players:GetPlayers() do
+        if v ~= lp then
+            Highlight(v)
+        end
+    end
+
+    Players.PlayerRemoving:Connect(function(plr)
+        local plrname = plr.Name
+        if Storage:FindFirstChild(plrname) then
+            Storage[plrname]:Destroy()
+        end
+        if connections[plr] then
+            connections[plr]:Disconnect()
+        end
+    end)
+end
+
+
+-- Corrigir os Toggles
+WallTab:AddToggle({
+    Name = "Nametags",
+    Default = false,
+    Callback = function(Value)
+        ToggleNameTags(Value) -- Corrigido para usar Value
+    end
+})
+
+WallTab:AddToggle({
+    Name = "Box",
+    Default = false,
+    Callback = function(Value)
+        ToggleBoxESP(Value) -- Corrigido para usar Value
+    end
+})
+
+WallTab:AddSlider({
+    Name = "Tamanho das Nametags",
+    Min = 10,
+    Max = 35,
+    Default = 15,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "Tamanho",
+    Callback = function(Value)
+        nameTagSize = Value
+        -- Atualizar nametags existentes
+        for playerName, nametag in pairs(NameTags) do
+            nametag.Size = Value
+        end
+    end
+})
+
+WallTab:AddColorpicker({
+    Name = "Cor Do Esp",
+    Default = Color3.new(1, 1, 1),
+    Callback = function(Value)
+        -- Atualizar cores
+        nameTagColor = Value
+        boxColor = Value
+        
+        -- Atualizar nametags
+        for _, nametag in pairs(NameTags) do
+            nametag.Color = Value
+        end
+        
+        -- Atualizar boxes
+        for _, box in pairs(ESPObjects) do
+            box.Color = Value
+        end
+        
+        -- Atualizar Chams
+        chamFillColor = Value
+        if game.CoreGui:FindFirstChild("Highlight_Storage") then
+            for _, highlight in pairs(game.CoreGui.Highlight_Storage:GetChildren()) do
+                if highlight:IsA("Highlight") then
+                    highlight.FillColor = Value
+                    highlight.OutlineColor = Value
+                end
+            end
+        end
+    end
+})
+
+-- Corrigir o Toggle do Aimbot
+AimbotTab:AddToggle({
+    Name = "Aimbot",
+    Default = false,
+    Callback = function(Value)
+        enableAimbot(Value) -- Chamar a função correta
+    end
+})
+
+-- Na seção AimbotTab, adicione:
+AimbotTab:AddBind({
+    Name = "Bind Aimbot (Segurar)",
+    Default = Enum.KeyCode.Q,
+    Hold = true,
+    Callback = function(value)
+        aimbotHolding = value
+    end
+})
+
+-- Corrigir os Sliders
+AimbotTab:AddSlider({
+    Name = "Aimbot Fov",
+    Min = 50,
+    Max = 500,
+    Default = 100,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "FOV",
+    Callback = function(Value)
+        fovSize = Value
+        updateFovCircle()
+    end
+})
+
+AimbotTab:AddSlider({
+    Name = "Aimbot Distance",
+    Min = 50,
+    Max = 500,
+    Default = 100,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "Distance",
+    Callback = function(Value)
+        aimDistance = Value
+    end
+})
+
+
+
+-- Na seção Aimbot (adicionar após os sliders existentes)
+AimbotTab:AddColorpicker({
+    Name = "Cor do FOV",
+    Default = Color3.new(1, 1, 1),
+    Callback = function(Value)
+        fovColor = Value
+        fovCircle.Color = Value
+    end
+})
 
 
 -- Atualizar a função esp para usar as variáveis de cor
