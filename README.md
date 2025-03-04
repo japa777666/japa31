@@ -747,6 +747,202 @@ AimbotTab:AddColorpicker({
     end
 })
 
+-- Adicionar no início com as outras variáveis
+local spectatingPlayer = nil
+local spectateEnabled = false
+local spectateDistance = 10
+local spectateConnection = nil
+local spectateRotation = 0
+local baseSpectateOffset = Vector3.new(0, 0, 0) -- Offset base dentro da cabeça
+
+
+-- Nova aba Players
+local PlayersTab = Window:MakeTab({
+    Name = "Players",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Adicionar no início com as outras variáveis
+local spectatingPlayer = nil
+local spectateEnabled = false
+local spectateDistance = 10
+local spectateConnection = nil
+local selectedPlayer = nil
+local spectateMouseConnection = nil
+local originalCameraType = Enum.CameraType.Custom
+
+
+-- Container para os elementos dinâmicos
+local playerListContainer = {}
+
+
+-- Função para atualizar a lista de jogadores
+local function UpdatePlayerList()
+    -- Limpar apenas os elementos da lista
+    for _, v in ipairs(playerListContainer) do
+        v:Destroy()
+    end
+    playerListContainer = {}
+
+    -- Recriar lista
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer then
+            local btn = PlayersTab:AddButton({
+                Name = player.Name,
+                Callback = function()
+                    selectedPlayer = player
+                    OrionLib:MakeNotification({
+                        Name = "Japa Menu",
+                        Content = "Selecionado: "..player.Name,
+                        Image = "rbxassetid://4483345998",
+                        Time = 2
+                    })
+                end
+            })
+            table.insert(playerListContainer, btn)
+        end
+    end
+end
+
+-- Seção de controles fixos
+local controlSection = PlayersTab:AddSection({Name = "Controles"})
+
+-- Botão de atualização
+controlSection:AddButton({
+    Name = "Atualizar Lista",
+    Callback = UpdatePlayerList
+})
+
+-- Função para espectar o jogador (substituir a anterior)
+local function SpectatePlayer()
+    if spectateConnection then
+        spectateConnection:Disconnect()
+    end
+    
+    spectateConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        if spectateEnabled and selectedPlayer and selectedPlayer.Character then
+            local targetChar = selectedPlayer.Character
+            local head = targetChar:FindFirstChild("Head")
+            local root = targetChar:FindFirstChild("HumanoidRootPart")
+            
+            if head and root then
+                -- Calcula a direção da câmera com rotação
+                local cameraDirection = CFrame.Angles(0, math.rad(spectateRotation), 0)
+                
+                -- Offset base + distância
+                local offset = cameraDirection * CFrame.new(0, 0, -spectateDistance)
+                
+                -- Posição final da câmera
+                local cameraPos = head.CFrame:ToWorldSpace(offset).Position
+                
+                -- Mantém o foco na cabeça
+                workspace.CurrentCamera.CFrame = CFrame.new(cameraPos, head.Position)
+            end
+        end
+    end)
+end
+
+-- Atualizar o slider na UI
+PlayersTab:AddSlider({
+    Name = "Distância da Câmera",
+    Min = 0, -- 0 = Dentro da cabeça
+    Max = 50,
+    Default = 0,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "Metros",
+    Callback = function(value)
+        spectateDistance = value
+    end
+})
+
+-- Adicione esta nova versão:
+local qDown = false
+local eDown = false
+local rotationSpeed = 2 -- Ajuste a velocidade conforme necessário
+
+UserInputService.InputBegan:Connect(function(input)
+    if spectateEnabled then
+        if input.KeyCode == Enum.KeyCode.Q then
+            qDown = true
+        elseif input.KeyCode == Enum.KeyCode.E then
+            eDown = true
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Q then
+        qDown = false
+    elseif input.KeyCode == Enum.KeyCode.E then
+        eDown = false
+    end
+end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+    if spectateEnabled then
+        if qDown then
+            spectateRotation = spectateRotation - (rotationSpeed * deltaTime * 60)
+        end
+        if eDown then
+            spectateRotation = spectateRotation + (rotationSpeed * deltaTime * 60)
+        end
+    end
+end)
+
+-- Atualizar o toggle de espectar
+PlayersTab:AddToggle({
+    Name = "Espectar Player",
+    Default = false,
+    Callback = function(value)
+        spectateEnabled = value
+        if value and selectedPlayer then
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+            SpectatePlayer()
+        else
+            if spectateConnection then
+                spectateConnection:Disconnect()
+            end
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+            spectateRotation = 0 -- Resetar rotação
+        end
+    end
+})
+
+PlayersTab:AddSlider({
+    Name = "Distância da Câmera",
+    Min = 5,
+    Max = 50,
+    Default = 10,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 1,
+    ValueName = "Distância",
+    Callback = function(value)
+        spectateDistance = value
+    end
+})
+
+PlayersTab:AddButton({
+    Name = "Teleportar para Player",
+    Callback = function()
+        if selectedPlayer and selectedPlayer.Character then
+            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+        end
+    end
+})
+
+local mainSection = PlayersTab:AddSection({Name = "Lista de Jogadores"})
+
+-- Inicialização
+UpdatePlayerList()
+
+-- Observador para novos jogadores
+game.Players.PlayerAdded:Connect(UpdatePlayerList)
+game.Players.PlayerRemoving:Connect(UpdatePlayerList)
+
+
 -- Atualizar a função esp para usar as variáveis de cor
 function esp(enabled)
     -- ... código existente ...
@@ -759,3 +955,4 @@ end
 
 -- Atualizar a criação do FOV Circle para usar a variável de cor
 fovCircle.Color = fovColorlocal 
+
