@@ -694,6 +694,27 @@ ConfigTab:AddSlider({
 })
 
 local Section = ConfigTab:AddSection({
+    Name = "Voice"
+})
+
+ConfigTab:AddButton({
+    Name = "Voltar Ao Voice",
+    Callback = function()
+        getgenv().VoiceChatInternal:Leave()
+        wait(0.2)
+        getgenv().VoiceChatService:rejoinVoice()
+        getgenv().VoiceChatService:rejoinVoice()
+        wait(0.1)
+        getgenv().VoiceChatService:joinVoice()
+        wait(0.3)
+        getgenv().VoiceChatInternal:Leave()
+        task.wait(.3)
+        getgenv().VoiceChatService:rejoinVoice()
+        getgenv().VoiceChatService:joinVoice()
+    end
+})
+
+local Section = ConfigTab:AddSection({
     Name = "Configurações"
 })
 
@@ -703,9 +724,6 @@ ConfigTab:AddButton({
         loadstring(game:HttpGet(('https://raw.githubusercontent.com/japa777666/japaini3333/refs/heads/main/README.md')))() 
     end
 })
-
-
-
 
 Tab:AddToggle({
     Name = "Voar",
@@ -951,4 +969,3 @@ end
 
 -- Atualizar a criação do FOV Circle para usar a variável de cor
 fovCircle.Color = fovColorlocal 
-
