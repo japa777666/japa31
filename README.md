@@ -452,6 +452,16 @@ local AimbotTab = Window:MakeTab({
     PremiumOnly = false
 })
 
+local Exploits = Window:MakeTab({
+    Name = "Exploits",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section = Exploits:AddSection({
+    Name = "Exploits"
+})
+
 local Section = AimbotTab:AddSection({
     Name = "Aimbot"
 })
@@ -693,11 +703,11 @@ ConfigTab:AddSlider({
     end
 })
 
-local Section = ConfigTab:AddSection({
+local Section = Exploits:AddSection({
     Name = "Voice"
 })
 
-ConfigTab:AddButton({
+Exploits:AddButton({
     Name = "Voltar Ao Voice",
     Callback = function()
         getgenv().VoiceChatInternal:Leave()
@@ -713,6 +723,111 @@ ConfigTab:AddButton({
         getgenv().VoiceChatService:joinVoice()
     end
 })
+
+local Section = Exploits:AddSection({
+    Name = "Clima"
+})
+
+Exploits:AddButton({
+    Name = "Deixar O Jogo De Dia",
+    Callback = function()
+		game.Lighting.TimeOfDay = "14:00:00"
+		game.Lighting:SetMinutesAfterMidnight(14 * 60)
+		game.Lighting.ClockTime = 14
+		print("Horário ajustado para 14:00.")
+    end
+})
+
+Exploits:AddButton({
+    Name = "Deixar O Jogo De Noite",
+    Callback = function()
+		game.Lighting.TimeOfDay = "02:00:00"
+		game.Lighting:SetMinutesAfterMidnight(2 * 60)
+		game.Lighting.ClockTime = 2
+		print("Horário ajustado para 02:00 (noite).")
+    end
+})
+
+local Section = Exploits:AddSection({
+    Name = "Puxar Players"
+})
+
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+local Window = OrionLib:MakeWindow({Name = "BigPaintball Teleport", HidePremium = false, SaveConfig = false, IntroText = "Feito por Astro"})
+
+local Tab = Window:MakeTab({
+	Name = "Funções",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local SessionID = string.gsub(tostring(math.random()):sub(3), "%d", function(c)
+    return string.char(96 + math.random(1, 26))
+end)
+print(' | BigPaintball2.lua carregado! [SessionID ' .. SessionID .. ']')
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+-- Proteção contra erros
+local function safeExecute(func)
+    local success, errorMessage = pcall(func)
+    if not success then
+        warn(' | Erro detectado: ' .. errorMessage .. ' [SessionID ' .. SessionID .. ']')
+    end
+end
+
+-- Função para teleportar entidades e jogadores
+local function teleportEntities()
+    local cframe = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.CFrame
+    if not cframe then return end
+
+    local team = LocalPlayer.Team
+    local spawnPosition = cframe * CFrame.new(0, 0, -15)
+
+    -- Entidades
+    for _, entity in ipairs(Workspace.__THINGS.__ENTITIES:GetChildren()) do
+        if entity:FindFirstChild("HumanoidRootPart") then
+            local part = entity.HumanoidRootPart
+            part.CanCollide = false
+            part.Anchored = true
+            part.CFrame = spawnPosition
+        elseif entity:FindFirstChild("Hitbox") then
+            local directory = entity:GetAttribute("Directory")
+            if not (directory == "White" and entity:GetAttribute("OwnerUID") == LocalPlayer.UserId) and
+               (not team or directory ~= team.Name) then
+                entity.Hitbox.CanCollide = false
+                entity.Hitbox.Anchored = true
+                entity.Hitbox.CFrame = spawnPosition * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5))
+            end
+        end
+    end
+
+    -- Jogadores
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if not team or player.Team.Name ~= team.Name then
+                if not player.Character:FindFirstChild("ForceField") then
+                    local hrp = player.Character.HumanoidRootPart
+                    hrp.CanCollide = false
+                    hrp.Anchored = true
+                    hrp.CFrame = spawnPosition * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5))
+                end
+            end
+        end
+    end
+end
+
+-- Botão que executa a função uma única vez
+Exploits:AddButton({
+	Name = "Puxar Jogadores e Entidades",
+	Callback = function()
+		safeExecute(teleportEntities)
+		print(" | Entidades e jogadores puxados. [SessionID " .. SessionID .. "]")
+	end
+})
+
 
 local Section = ConfigTab:AddSection({
     Name = "Configurações"
