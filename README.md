@@ -828,6 +828,37 @@ Exploits:AddButton({
 	end
 })
 
+Exploits:AddButton({
+	Name = "Destravar Jogadores e Entidades",
+	Callback = function()
+		safeExecute(function()
+			-- Destrava entidades
+			for _, entity in ipairs(Workspace.__THINGS.__ENTITIES:GetChildren()) do
+				if entity:FindFirstChild("HumanoidRootPart") then
+					local part = entity.HumanoidRootPart
+					part.Anchored = false
+					part.CanCollide = true
+				elseif entity:FindFirstChild("Hitbox") then
+					entity.Hitbox.Anchored = false
+					entity.Hitbox.CanCollide = true
+				end
+			end
+
+			-- Destrava jogadores
+			for _, player in ipairs(Players:GetPlayers()) do
+				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+					local hrp = player.Character.HumanoidRootPart
+					hrp.Anchored = false
+					hrp.CanCollide = true
+				end
+			end
+
+			print(" | Entidades e jogadores destravados. [SessionID " .. SessionID .. "]")
+		end)
+	end
+})
+
+
 
 local Section = ConfigTab:AddSection({
     Name = "Configurações"
