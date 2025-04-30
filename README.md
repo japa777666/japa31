@@ -452,16 +452,6 @@ local AimbotTab = Window:MakeTab({
     PremiumOnly = false
 })
 
-local Exploits = Window:MakeTab({
-    Name = "Exploits",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-local Section = Exploits:AddSection({
-    Name = "Exploits"
-})
-
 local Section = AimbotTab:AddSection({
     Name = "Aimbot"
 })
@@ -657,13 +647,149 @@ UpdatePlayerList()
 game.Players.PlayerAdded:Connect(UpdatePlayerList)
 game.Players.PlayerRemoving:Connect(UpdatePlayerList)
 
+local ExploitsTab = Window:MakeTab({
+    Name = "Exploits",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+-- Seções da aba Exploits
+local sectionVoice = ExploitsTab:AddSection({ Name = "Voice" })
+
+-- Botão: Voltar Ao Voice
+ExploitsTab:AddButton({
+    Name = "Voltar Ao Voice",
+    Callback = function()
+        if getgenv().VoiceChatInternal and getgenv().VoiceChatService then
+            getgenv().VoiceChatInternal:Leave()
+            task.wait(0.2)
+            getgenv().VoiceChatService:rejoinVoice()
+            getgenv().VoiceChatService:joinVoice()
+            print("Tentando reconectar ao voice.")
+        else
+            print("VoiceChatService não disponível neste jogo.")
+        end
+    end
+})
+
+local sectionVisual = ExploitsTab:AddSection({ Name = "Shaders " })
+
+local shadersAtivos = false
+local lighting = game:GetService("Lighting")
+
+ExploitsTab:AddToggle({
+    Name = "Ativar Shaders",
+    Default = false,
+    Callback = function(estado)
+        shadersAtivos = estado
+
+        if estado then
+            -- Color Correction (suave e sem laranja)
+            local cc = Instance.new("ColorCorrectionEffect", lighting)
+            cc.Name = "JapaColor"
+            cc.Brightness = 0.05
+            cc.Contrast = 0.2
+            cc.Saturation = 0.3
+            cc.TintColor = Color3.fromRGB(240, 240, 255) -- Azul claro levemente frio
+
+            -- Bloom (brilho suave)
+            local bloom = Instance.new("BloomEffect", lighting)
+            bloom.Name = "JapaBloom"
+            bloom.Intensity = 0.25
+            bloom.Threshold = 0.8
+            bloom.Size = 64
+
+            -- Depth of Field (foco de câmera)
+            local dof = Instance.new("DepthOfFieldEffect", lighting)
+            dof.Name = "JapaDOF"
+            dof.FarIntensity = 0.2
+            dof.FocusDistance = 35
+            dof.InFocusRadius = 50
+            dof.NearIntensity = 0.1
+
+            -- Luz ambiente refinada
+            lighting.Ambient = Color3.fromRGB(100, 100, 120)
+            lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 145)
+            lighting.Brightness = 3
+
+            print("✨ Shaders estilosos ativados.")
+        else
+            -- Remover efeitos
+            for _, name in ipairs({"JapaColor", "JapaBloom", "JapaDOF"}) do
+                local e = lighting:FindFirstChild(name)
+                if e then e:Destroy() end
+            end
+
+            -- Restaurar iluminação padrão
+            lighting.Ambient = Color3.fromRGB(127, 127, 127)
+            lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+            lighting.Brightness = 2
+
+            print("❌ Shaders desativados.")
+        end
+    end
+})
+
+local sectionPuxar = ExploitsTab:AddSection({ Name = "Puxar Players" })
+
+-- Funções auxiliares
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local function safeExecute(func)
+    local success, result = pcall(func)
+    if not success then
+        warn("Erro: " .. result)
+    end
+end
+
+local function teleportAllPlayers()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local otherHRP = player.Character.HumanoidRootPart
+            otherHRP.Anchored = true
+            otherHRP.CanCollide = false
+            otherHRP.CFrame = hrp.CFrame * CFrame.new(math.random(-5,5), 0, math.random(-5,5))
+        end
+    end
+end
+
+local function unanchorAllPlayers()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = player.Character.HumanoidRootPart
+            hrp.Anchored = false
+            hrp.CanCollide = true
+        end
+    end
+end
+
+-- Botão: Puxar jogadores
+ExploitsTab:AddButton({
+    Name = "Puxar Todos os Jogadores",
+    Callback = function()
+        safeExecute(teleportAllPlayers)
+        print("Jogadores puxados para perto.")
+    end
+})
+
+-- Botão: Destravar jogadores
+ExploitsTab:AddButton({
+    Name = "Destravar Jogadores",
+    Callback = function()
+        safeExecute(unanchorAllPlayers)
+        print("Jogadores destravados.")
+    end
+})
+
 local ConfigTab = Window:MakeTab({
     Name = "Misc",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
-
-
 
 local Section = ConfigTab:AddSection({
     Name = "Freecam"
@@ -702,163 +828,6 @@ ConfigTab:AddSlider({
         rotationSpeedQ = value
     end
 })
-
-local Section = Exploits:AddSection({
-    Name = "Voice"
-})
-
-Exploits:AddButton({
-    Name = "Voltar Ao Voice",
-    Callback = function()
-        getgenv().VoiceChatInternal:Leave()
-        wait(0.2)
-        getgenv().VoiceChatService:rejoinVoice()
-        getgenv().VoiceChatService:rejoinVoice()
-        wait(0.1)
-        getgenv().VoiceChatService:joinVoice()
-        wait(0.3)
-        getgenv().VoiceChatInternal:Leave()
-        task.wait(.3)
-        getgenv().VoiceChatService:rejoinVoice()
-        getgenv().VoiceChatService:joinVoice()
-    end
-})
-
-local Section = Exploits:AddSection({
-    Name = "Clima"
-})
-
-Exploits:AddButton({
-    Name = "Deixar O Jogo De Dia",
-    Callback = function()
-		game.Lighting.TimeOfDay = "14:00:00"
-		game.Lighting:SetMinutesAfterMidnight(14 * 60)
-		game.Lighting.ClockTime = 14
-		print("Horário ajustado para 14:00.")
-    end
-})
-
-Exploits:AddButton({
-    Name = "Deixar O Jogo De Noite",
-    Callback = function()
-		game.Lighting.TimeOfDay = "02:00:00"
-		game.Lighting:SetMinutesAfterMidnight(2 * 60)
-		game.Lighting.ClockTime = 2
-		print("Horário ajustado para 02:00 (noite).")
-    end
-})
-
-local Section = Exploits:AddSection({
-    Name = "Puxar Players"
-})
-
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
-local Window = OrionLib:MakeWindow({Name = "BigPaintball Teleport", HidePremium = false, SaveConfig = false, IntroText = "Feito por Astro"})
-
-local Tab = Window:MakeTab({
-	Name = "Funções",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
-})
-
-local SessionID = string.gsub(tostring(math.random()):sub(3), "%d", function(c)
-    return string.char(96 + math.random(1, 26))
-end)
-print(' | BigPaintball2.lua carregado! [SessionID ' .. SessionID .. ']')
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-
--- Proteção contra erros
-local function safeExecute(func)
-    local success, errorMessage = pcall(func)
-    if not success then
-        warn(' | Erro detectado: ' .. errorMessage .. ' [SessionID ' .. SessionID .. ']')
-    end
-end
-
--- Função para teleportar entidades e jogadores
-local function teleportEntities()
-    local cframe = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.CFrame
-    if not cframe then return end
-
-    local team = LocalPlayer.Team
-    local spawnPosition = cframe * CFrame.new(0, 0, -15)
-
-    -- Entidades
-    for _, entity in ipairs(Workspace.__THINGS.__ENTITIES:GetChildren()) do
-        if entity:FindFirstChild("HumanoidRootPart") then
-            local part = entity.HumanoidRootPart
-            part.CanCollide = false
-            part.Anchored = true
-            part.CFrame = spawnPosition
-        elseif entity:FindFirstChild("Hitbox") then
-            local directory = entity:GetAttribute("Directory")
-            if not (directory == "White" and entity:GetAttribute("OwnerUID") == LocalPlayer.UserId) and
-               (not team or directory ~= team.Name) then
-                entity.Hitbox.CanCollide = false
-                entity.Hitbox.Anchored = true
-                entity.Hitbox.CFrame = spawnPosition * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5))
-            end
-        end
-    end
-
-    -- Jogadores
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            if not team or player.Team.Name ~= team.Name then
-                if not player.Character:FindFirstChild("ForceField") then
-                    local hrp = player.Character.HumanoidRootPart
-                    hrp.CanCollide = false
-                    hrp.Anchored = true
-                    hrp.CFrame = spawnPosition * CFrame.new(math.random(-5, 5), 0, math.random(-5, 5))
-                end
-            end
-        end
-    end
-end
-
--- Botão que executa a função uma única vez
-Exploits:AddButton({
-	Name = "Puxar Jogadores e Entidades",
-	Callback = function()
-		safeExecute(teleportEntities)
-		print(" | Entidades e jogadores puxados. [SessionID " .. SessionID .. "]")
-	end
-})
-
-Exploits:AddButton({
-	Name = "Destravar Jogadores e Entidades",
-	Callback = function()
-		safeExecute(function()
-			-- Destrava entidades
-			for _, entity in ipairs(Workspace.__THINGS.__ENTITIES:GetChildren()) do
-				if entity:FindFirstChild("HumanoidRootPart") then
-					local part = entity.HumanoidRootPart
-					part.Anchored = false
-					part.CanCollide = true
-				elseif entity:FindFirstChild("Hitbox") then
-					entity.Hitbox.Anchored = false
-					entity.Hitbox.CanCollide = true
-				end
-			end
-
-			-- Destrava jogadores
-			for _, player in ipairs(Players:GetPlayers()) do
-				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					local hrp = player.Character.HumanoidRootPart
-					hrp.Anchored = false
-					hrp.CanCollide = true
-				end
-			end
-
-			print(" | Entidades e jogadores destravados. [SessionID " .. SessionID .. "]")
-		end)
-	end
-})
-
-
 
 local Section = ConfigTab:AddSection({
     Name = "Configurações"
