@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "Japa Menu V3", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "Japa Menu V3.1", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 -- Variáveis de controle
 local flyEnabled = false
@@ -660,17 +660,43 @@ local sectionVoice = ExploitsTab:AddSection({ Name = "Voice" })
 ExploitsTab:AddButton({
     Name = "Voltar Ao Voice",
     Callback = function()
-        if getgenv().VoiceChatInternal and getgenv().VoiceChatService then
-            getgenv().VoiceChatInternal:Leave()
-            task.wait(0.2)
-            getgenv().VoiceChatService:rejoinVoice()
-            getgenv().VoiceChatService:joinVoice()
-            print("Tentando reconectar ao voice.")
+        local vci = cloneref and cloneref(game:GetService("VoiceChatInternal"))
+        local vcs = cloneref and cloneref(game:GetService("VoiceChatService"))
+
+        if vci and vcs then
+            local success, err = pcall(function()
+                vci:Leave()
+                task.wait(0.2)
+                vcs:rejoinVoice()
+                vcs:joinVoice()
+            end)
+
+            if success then
+                print("✅ Voice reconectado com sucesso.")
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Voice Chat",
+                    Text = "Reconectado com sucesso!",
+                    Duration = 3
+                })
+            else
+                warn("❌ Erro ao reconectar:", err)
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Voice Chat",
+                    Text = "Erro ao reconectar.",
+                    Duration = 3
+                })
+            end
         else
-            print("VoiceChatService não disponível neste jogo.")
+            print("❌ VoiceChatService não disponível neste jogo.")
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Voice Chat",
+                Text = "VoiceChatService indisponível.",
+                Duration = 3
+            })
         end
     end
 })
+
 
 local sectionVisual = ExploitsTab:AddSection({ Name = "Shaders " })
 
