@@ -897,6 +897,55 @@ local Section = ConfigTab:AddSection({
     Name = "Configurações"
 })
 
+local mouseLocked = false
+local UIS = game:GetService("UserInputService")
+local lockKey = none -- Tecla padrão (será usada no InputBegan)
+
+-- Começa destravado
+UIS.MouseBehavior = Enum.MouseBehavior.Default
+UIS.MouseIconEnabled = true
+
+-- Tira da primeira pessoa
+local function resetCamera()
+    local camera = workspace.CurrentCamera
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        camera.CameraSubject = player.Character:FindFirstChild("Humanoid")
+        camera.CameraType = Enum.CameraType.Custom
+        camera.CFrame = camera.CFrame * CFrame.new(0, 0, 3)
+    end
+end
+
+-- Travar/destravar o mouse
+local function toggleMouseLock()
+    mouseLocked = not mouseLocked
+    if mouseLocked then
+        UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+        UIS.MouseIconEnabled = false
+    else
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = true
+        resetCamera()
+    end
+end
+
+-- Detecta pressionamento da tecla de controle
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == lockKey then
+        toggleMouseLock()
+    end
+end)
+
+ConfigTab:AddBind({
+    Name = "Travar/Destravar O Mouse",
+    Default = Enum.KeyCode.V,
+    Hold = false,
+    Callback = function()
+        toggleMouseLock() -- A bind executa a função diretamente
+    end
+})
+
 ConfigTab:AddButton({
     Name = "Reiniciar Script",
     Callback = function()
