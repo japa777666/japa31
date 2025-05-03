@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "Japa Menu V3.1", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.2", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 -- Variáveis de controle
 local flyEnabled = false
@@ -51,9 +51,19 @@ local freecamEnabled = false
 local cameraOffset = Vector3.new(0, 5, 10)
 local mouseDelta = Vector2.new(0, 0)
 local mouseMovementConnection
+local teleportConnection
+local renderSteppedConnection
 local moveSpeed = 0.5
-local rotationSpeed = 0.001
-local rotationSpeedQ = 0.001
+local rotationSpeedQ = 0.001 -- Esta variável agora controla todas as rotações
+
+-- Variáveis essenciais
+local Player = game:GetService("Players").LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Camera = game:GetService("Workspace").CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local function onMouseMove(input)
     if freecamEnabled and input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -65,21 +75,33 @@ local function enableFreecam()
     if not freecamEnabled then
         freecamEnabled = true
         Camera.CameraType = Enum.CameraType.Scriptable
-        Camera.CFrame = humanoidRootPart.CFrame * CFrame.new(cameraOffset)
+        Camera.CFrame = HumanoidRootPart.CFrame * CFrame.new(cameraOffset)
         
         -- Desabilitar movimentação do personagem
-        if humanoid then
-            humanoid.WalkSpeed = 0
-            humanoid.JumpPower = 0
-            humanoid.PlatformStand = true -- Evita que o personagem se mova ou pule
+        if Humanoid then
+            Humanoid.WalkSpeed = 0
+            Humanoid.JumpPower = 0
+            Humanoid.PlatformStand = true
         end
         
-        -- Bloqueia a entrada das teclas de movimento (W, A, S, D)
-        UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        -- Conexão para teleporte
+        teleportConnection = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
             if freecamEnabled and not gameProcessedEvent then
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.S or input.KeyCode == Enum.KeyCode.D then
-                        input:Stop() -- Bloqueia as teclas de movimento
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    -- Cálculo do teleporte
+                    local rayOrigin = Camera.CFrame.Position
+                    local rayDirection = Camera.CFrame.LookVector * 1000
+                    
+                    local raycastParams = RaycastParams.new()
+                    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                    raycastParams.FilterDescendantsInstances = {Character}
+                    
+                    local raycastResult = workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+                    
+                    if raycastResult then
+                        HumanoidRootPart.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
+                    else
+                        HumanoidRootPart.CFrame = CFrame.new(rayOrigin + (Camera.CFrame.LookVector * 50))
                     end
                 end
             end
@@ -87,10 +109,11 @@ local function enableFreecam()
 
         mouseMovementConnection = UserInputService.InputChanged:Connect(onMouseMove)
         
-        RunService.RenderStepped:Connect(function()
+        renderSteppedConnection = RunService.RenderStepped:Connect(function()
             if freecamEnabled then
                 local moveDirection = Vector3.new(0, 0, 0)
-                -- Movimenta a câmera com W, A, S, D
+                
+                -- Controles de movimento
                 if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDirection = moveDirection + Vector3.new(0, 0, -1) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDirection = moveDirection + Vector3.new(0, 0, 1) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDirection = moveDirection + Vector3.new(-1, 0, 0) end
@@ -98,9 +121,10 @@ local function enableFreecam()
                 if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDirection = moveDirection + Vector3.new(0, 1, 0) end
                 if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDirection = moveDirection + Vector3.new(0, -1, 0) end
                 
+                -- Aplicar movimento
                 Camera.CFrame = Camera.CFrame * CFrame.new(moveDirection * moveSpeed)
                 
-                -- Movimentação da câmera para rotação com Q e E
+                -- Rotação horizontal (Q/E)
                 if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
                     Camera.CFrame = Camera.CFrame * CFrame.Angles(0, rotationSpeedQ, 0)
                 end
@@ -108,12 +132,20 @@ local function enableFreecam()
                     Camera.CFrame = Camera.CFrame * CFrame.Angles(0, -rotationSpeedQ, 0)
                 end
                 
-                -- Controle da rotação com o mouse
+                -- Rotação vertical (Z/X) - Adicionado aqui
+                if UserInputService:IsKeyDown(Enum.KeyCode.Z) then
+                    Camera.CFrame = Camera.CFrame * CFrame.Angles(rotationSpeedQ, 0, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.X) then
+                    Camera.CFrame = Camera.CFrame * CFrame.Angles(-rotationSpeedQ, 0, 0)
+                end
+                
+                -- Rotação com mouse
                 if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
                     local sensitivity = 0.1
-                    local yaw = CFrame.Angles(0, -mouseDelta.X * sensitivity, 0)
-                    local pitch = CFrame.Angles(-mouseDelta.Y * sensitivity, 0, 0)
-                    Camera.CFrame = Camera.CFrame * yaw * pitch
+                    Camera.CFrame = Camera.CFrame * 
+                        CFrame.Angles(0, -mouseDelta.X * sensitivity, 0) * 
+                        CFrame.Angles(-mouseDelta.Y * sensitivity, 0, 0)
                     mouseDelta = Vector2.new(0, 0)
                 end
             end
@@ -124,18 +156,29 @@ end
 local function disableFreecam()
     freecamEnabled = false
     Camera.CameraType = Enum.CameraType.Custom
-    Camera.CFrame = humanoidRootPart.CFrame
-    if mouseMovementConnection then
-        mouseMovementConnection:Disconnect()
-    end
-    if humanoid then
-        humanoid.WalkSpeed = 16
-        humanoid.JumpPower = 50
-        humanoid.PlatformStand = false -- Restaura o movimento normal do personagem
+    Camera.CFrame = HumanoidRootPart.CFrame
+    
+    -- Desconectar conexões
+    if mouseMovementConnection then mouseMovementConnection:Disconnect() end
+    if teleportConnection then teleportConnection:Disconnect() end
+    if renderSteppedConnection then renderSteppedConnection:Disconnect() end
+    
+    -- Restaurar personagem
+    if Humanoid then
+        Humanoid.WalkSpeed = 16
+        Humanoid.JumpPower = 50
+        Humanoid.PlatformStand = false
     end
 end
 
-
+-- Sistema de ativação (adicione seu próprio método preferido)
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+    if not gameProcessedEvent then
+        if input.KeyCode == Enum.KeyCode.F then
+            if freecamEnabled then disableFreecam() else enableFreecam() end
+        end
+    end
+end)
 -- Funções para Box ESP
 local function CreateBox()
     local box = Drawing.new("Square")
@@ -423,8 +466,8 @@ local function disableFly()
 end
 
 local Tab = Window:MakeTab({
-    Name = "Self",
-    Icon = "rbxassetid://4483345998",
+    Name = "🙍Self",
+    Icon = "rbxassetid://",
     PremiumOnly = false
 })
 
@@ -437,8 +480,8 @@ OrionLib:MakeNotification({
 })
 
 local WallTab = Window:MakeTab({
-    Name = "Visuals",
-    Icon = "rbxassetid://4483345998",
+    Name = "👁️Visuals",
+    Icon = "rbxassetid://",
     PremiumOnly = false
 })
 
@@ -447,8 +490,8 @@ local Section = WallTab:AddSection({
 })
 
 local AimbotTab = Window:MakeTab({
-    Name = "Aimbot",
-    Icon = "rbxassetid://4483345998",
+    Name = "🔫Aimbot",
+    Icon = "",
     PremiumOnly = false
 })
 
@@ -471,8 +514,8 @@ local baseSpectateOffset = Vector3.new(0, 0, 0) -- Offset base dentro da cabeça
 
 -- Nova aba Players
 local PlayersTab = Window:MakeTab({
-    Name = "Players",
-    Icon = "rbxassetid://4483345998",
+    Name = "👪Players",
+    Icon = "rbxassetid://",
     PremiumOnly = false
 })
 
@@ -517,15 +560,6 @@ local function UpdatePlayerList()
         end
     end
 end
-
--- Seção de controles fixos
-local controlSection = PlayersTab:AddSection({Name = "Controles"})
-
--- Botão de atualização
-controlSection:AddButton({
-    Name = "Atualizar Lista",
-    Callback = UpdatePlayerList
-})
 
 -- Função para espectar o jogador (substituir a anterior)
 local function SpectatePlayer()
@@ -592,6 +626,10 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
+local Section = PlayersTab:AddSection({
+    Name = "opções"
+})
+
 PlayersTab:AddButton({
     Name = "Teleportar para Player",
     Callback = function()
@@ -648,8 +686,8 @@ game.Players.PlayerAdded:Connect(UpdatePlayerList)
 game.Players.PlayerRemoving:Connect(UpdatePlayerList)
 
 local ExploitsTab = Window:MakeTab({
-    Name = "Exploits",
-    Icon = "rbxassetid://4483345998",
+    Name = "💻Exploits",
+    Icon = "rbxassetid://",
     PremiumOnly = false
 })
 
@@ -812,8 +850,8 @@ ExploitsTab:AddButton({
 })
 
 local ConfigTab = Window:MakeTab({
-    Name = "Misc",
-    Icon = "rbxassetid://4483345998",
+    Name = "⚙️Misc",
+    Icon = "rbxassetid://",
     PremiumOnly = false
 })
 
@@ -857,6 +895,13 @@ ConfigTab:AddSlider({
 
 local Section = ConfigTab:AddSection({
     Name = "Configurações"
+})
+
+ConfigTab:AddButton({
+    Name = "Reiniciar Script",
+    Callback = function()
+        loadstring(game:HttpGet(('https://raw.githubusercontent.com/japa777666/japa31/refs/heads/main/README.md')))() 
+    end
 })
 
 ConfigTab:AddButton({
