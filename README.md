@@ -899,7 +899,6 @@ local Section = ConfigTab:AddSection({
 
 local mouseLocked = false
 local UIS = game:GetService("UserInputService")
-local lockKey = none -- Tecla padrão (será usada no InputBegan)
 
 -- Começa destravado
 UIS.MouseBehavior = Enum.MouseBehavior.Default
@@ -929,22 +928,18 @@ local function toggleMouseLock()
     end
 end
 
--- Detecta pressionamento da tecla de controle
-UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == lockKey then
-        toggleMouseLock()
-    end
-end)
+-- Removido: InputBegan com lockKey
 
+-- Bind configurável
 ConfigTab:AddBind({
     Name = "Travar/Destravar O Mouse",
     Default = Enum.KeyCode.V,
     Hold = false,
     Callback = function()
-        toggleMouseLock() -- A bind executa a função diretamente
+        toggleMouseLock()
     end
 })
+
 
 ConfigTab:AddButton({
     Name = "Reiniciar Script",
