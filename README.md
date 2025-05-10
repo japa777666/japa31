@@ -171,14 +171,6 @@ local function disableFreecam()
     end
 end
 
--- Sistema de ativação (adicione seu próprio método preferido)
-UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-    if not gameProcessedEvent then
-        if input.KeyCode == Enum.KeyCode.F then
-            if freecamEnabled then disableFreecam() else enableFreecam() end
-        end
-    end
-end)
 -- Funções para Box ESP
 local function CreateBox()
     local box = Drawing.new("Square")
