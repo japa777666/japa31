@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.2", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.3", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 -- Variáveis de controle
 local flyEnabled = false
@@ -528,10 +528,8 @@ local selectedPlayer = nil
 local spectateMouseConnection = nil
 local originalCameraType = Enum.CameraType.Custom
 
-
 -- Container para os elementos dinâmicos
 local playerListContainer = {}
-
 
 -- Função para atualizar a lista de jogadores
 local function UpdatePlayerList()
@@ -541,23 +539,33 @@ local function UpdatePlayerList()
     end
     playerListContainer = {}
 
-    -- Recriar lista
+    -- Obter jogadores (exceto o local) e ordenar por nome
+    local players = {}
     for _, player in ipairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer then
-            local btn = PlayersTab:AddButton({
-                Name = player.Name,
-                Callback = function()
-                    selectedPlayer = player
-                    OrionLib:MakeNotification({
-                        Name = "Japa Menu",
-                        Content = "Selecionado: "..player.Name,
-                        Image = "rbxassetid://4483345998",
-                        Time = 2
-                    })
-                end
-            })
-            table.insert(playerListContainer, btn)
+            table.insert(players, player)
         end
+    end
+    table.sort(players, function(a, b)
+        return a.Name:lower() < b.Name:lower()
+    end)
+
+    -- Criar botões ordenados
+    for _, player in ipairs(players) do
+        local btn = PlayersTab:AddButton({
+            Name = player.Name,
+            Callback = function()
+                selectedPlayer = player
+                SpectatePlayer() -- <== ADICIONE ISSO AQUI
+                OrionLib:MakeNotification({
+                    Name = "Japa Menu",
+                    Content = "Selecionado: "..player.Name,
+                    Image = "rbxassetid://4483345998",
+                    Time = 2
+                })
+            end
+        })
+        table.insert(playerListContainer, btn)
     end
 end
 
@@ -589,8 +597,6 @@ local function SpectatePlayer()
         end
     end)
 end
-
-
 
 -- Adicione esta nova versão:
 local qDown = false
@@ -640,6 +646,34 @@ PlayersTab:AddButton({
     end
 })
 
+-- Variável que controla o estado do teleporte em loop
+local tpCheckboxChecked = false
+
+-- Adicionando o toggle para o teleporte em loop
+PlayersTab:AddToggle({
+    Name = "Teleporte em Loop",
+    Default = false, -- Estado inicial (desmarcado)
+    Callback = function(value)
+        tpCheckboxChecked = value  -- Atualiza o estado da checkbox
+    end
+})
+
+-- Função que é executada em loop enquanto a checkbox estiver marcada
+local function teleportLoop()
+    while true do
+        if tpCheckboxChecked then
+            if selectedPlayer and selectedPlayer.Character then
+                local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+            end
+        end
+        wait(0.01) -- Intervalo entre as verificações (ajustável conforme necessário)
+    end
+end
+
+-- Iniciar o loop de teleporte em segundo plano
+spawn(teleportLoop)
+
 -- Atualizar o toggle de espectar
 PlayersTab:AddToggle({
     Name = "Espectar Player",
@@ -659,8 +693,6 @@ PlayersTab:AddToggle({
     end
 })
 
-
-
 -- Atualizar o slider na UI
 PlayersTab:AddSlider({
     Name = "Distância da Câmera",
@@ -679,6 +711,9 @@ PlayersTab:AddSlider({
 local mainSection = PlayersTab:AddSection({Name = "Lista de Jogadores"})
 
 -- Inicialização
+-- Atualização automática quando jogador entra ou sai
+game.Players.PlayerAdded:Connect(UpdatePlayerList)
+game.Players.PlayerRemoving:Connect(UpdatePlayerList)
 UpdatePlayerList()
 
 -- Observador para novos jogadores
@@ -734,7 +769,6 @@ ExploitsTab:AddButton({
         end
     end
 })
-
 
 local sectionVisual = ExploitsTab:AddSection({ Name = "Shaders " })
 
@@ -996,7 +1030,49 @@ Tab:AddSlider({
     end    
 })
 
+local sectionVoice = Tab:AddSection({ Name = "Teleport Forward" })
 
+-- Função de teleporte para frente
+local function teleportForward()
+    local player = game.Players.LocalPlayer
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+
+    local hrp = player.Character.HumanoidRootPart
+    local lookVector = hrp.CFrame.LookVector
+    local distance = 5-- Distância para frente (pode ajustar)
+
+    -- Teleportar na direção que está olhando
+    hrp.CFrame = hrp.CFrame + (lookVector * distance)
+end
+
+Tab:AddButton({
+    Name = "Teleport Forward",
+    Callback = teleportForward
+})
+
+local sectionVoice = Tab:AddSection({ Name = "Pulos Infinitos" })
+
+-- Infinite Jump lógica
+local infiniteJumpEnabled = false
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.JumpRequest:Connect(function()
+    if infiniteJumpEnabled then
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- Checkbox para ativar/desativar pulo infinito
+Tab:AddToggle({
+    Name = "Infinite Jump",
+    Default = false,
+    Callback = function(state)
+        infiniteJumpEnabled = state
+    end
+})
 
 function esp(enabled)
     if not enabled then
