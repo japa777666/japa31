@@ -1,6 +1,6 @@
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
-local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.3", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.2", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
 
 -- Variáveis de controle
 local flyEnabled = false
@@ -882,6 +882,28 @@ ExploitsTab:AddButton({
         print("Jogadores destravados.")
     end
 })
+
+-- Toggle (checkbox) para puxar em loop
+local puxarLoopAtivado = false
+
+ExploitsTab:AddToggle({
+    Name = "Puxar em Loop",
+    Default = false,
+    Callback = function(state)
+        puxarLoopAtivado = state
+    end
+})
+
+-- Loop que roda em background
+spawn(function()
+    while true do
+        if puxarLoopAtivado then
+            safeExecute(teleportAllPlayers)
+        end
+        wait(3) -- tempo entre puxadas (ajuste se quiser mais rápido ou mais lento)
+    end
+end)
+
 
 local ConfigTab = Window:MakeTab({
     Name = "⚙️Misc",
