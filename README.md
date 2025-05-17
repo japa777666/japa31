@@ -1295,12 +1295,16 @@ local function updateDistanceElements(player)
         local enemyPos = Camera:WorldToViewportPoint(rootPart.Position)
         local playerPos = Camera:WorldToViewportPoint(localRoot.Position)
 
-        -- Linha de distância
-        if ESPAdvancedData.DistanceLines[player] then
-            ESPAdvancedData.DistanceLines[player].Visible = DistanceLineEnabled
-            ESPAdvancedData.DistanceLines[player].From = Vector2.new(playerPos.X, playerPos.Y)
-            ESPAdvancedData.DistanceLines[player].To = Vector2.new(enemyPos.X, enemyPos.Y)
-        end
+-- Linha de distância (só desenha se o inimigo estiver no campo de visão)
+if ESPAdvancedData.DistanceLines[player] then
+    if DistanceLineEnabled and enemyPos.Z > 0 and playerPos.Z > 0 then
+        ESPAdvancedData.DistanceLines[player].Visible = true
+        ESPAdvancedData.DistanceLines[player].From = Vector2.new(playerPos.X, playerPos.Y)
+        ESPAdvancedData.DistanceLines[player].To = Vector2.new(enemyPos.X, enemyPos.Y)
+    else
+        ESPAdvancedData.DistanceLines[player].Visible = false
+    end
+end
 
         -- Texto de distância embaixo do player
         if ESPAdvancedData.DistanceTexts[player] then
