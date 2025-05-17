@@ -1207,12 +1207,13 @@ local function createSkeleton(player)
         local line = Drawing.new("Line")
         line.Thickness = 1
         line.Color = ESPAdvancedColor
+        line.Visible = false
         skeleton[pair[1].."-"..pair[2]] = line
     end
     return skeleton
 end
 
-local function createHeadCircle(player)
+local function createHeadCircle()
     local circle = Drawing.new("Circle")
     circle.Visible = false
     circle.Color = ESPAdvancedColor
@@ -1222,7 +1223,7 @@ local function createHeadCircle(player)
     return circle
 end
 
-local function createDistanceLine(player)
+local function createDistanceLine()
     local line = Drawing.new("Line")
     line.Visible = false
     line.Color = ESPAdvancedColor
@@ -1230,7 +1231,7 @@ local function createDistanceLine(player)
     return line
 end
 
-local function createDistanceText(player)
+local function createDistanceText()
     local text = Drawing.new("Text")
     text.Visible = false
     text.Color = ESPAdvancedColor
@@ -1249,13 +1250,18 @@ local function updateSkeleton(player)
         local part1 = character:FindFirstChild(parts[1])
         local part2 = character:FindFirstChild(parts[2])
         
-if part1 and part2 and (part1.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= espDistance then
-            local pos1 = Camera:WorldToViewportPoint(part1.Position)
-            local pos2 = Camera:WorldToViewportPoint(part2.Position)
-            
-            line.Visible = SkeletonEnabled and pos1.Z > 0 and pos2.Z > 0
-            line.From = Vector2.new(pos1.X, pos1.Y)
-            line.To = Vector2.new(pos2.X, pos2.Y)
+        if part1 and part2 and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (part1.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if distance <= espDistance then
+                local pos1 = Camera:WorldToViewportPoint(part1.Position)
+                local pos2 = Camera:WorldToViewportPoint(part2.Position)
+
+                line.Visible = SkeletonEnabled and pos1.Z > 0 and pos2.Z > 0
+                line.From = Vector2.new(pos1.X, pos1.Y)
+                line.To = Vector2.new(pos2.X, pos2.Y)
+            else
+                line.Visible = false
+            end
         else
             line.Visible = false
         end
@@ -1264,14 +1270,16 @@ end
 
 local function updateHeadCircle(player)
     local character = player.Character
-    if not character or not ESPAdvancedData.HeadCircles[player] then return end
+    if not character or not ESPAdvancedData.HeadCircles[player] or not LocalPlayer.Character then return end
 
     local head = character:FindFirstChild("Head")
-    if head then
+    local localHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if head and localHRP then
         local pos = Camera:WorldToViewportPoint(head.Position)
-local distance = (head.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-ESPAdvancedData.HeadCircles[player].Visible = HeadCircleEnabled and pos.Z > 0 and distance <= espDistance
-        ESPAdvancedData.HeadCircles[player].Position = Vector2.new(pos.X, pos.Y)
+        local distance = (head.Position - localHRP.Position).Magnitude
+        local circle = ESPAdvancedData.HeadCircles[player]
+        circle.Visible = HeadCircleEnabled and pos.Z > 0 and distance <= espDistance
+        circle.Position = Vector2.new(pos.X, pos.Y)
     end
 end
 
@@ -1286,37 +1294,36 @@ local function updateDistanceElements(player)
     if rootPart and localRoot then
         local distance = (rootPart.Position - localRoot.Position).Magnitude
 
+        local line = ESPAdvancedData.DistanceLines[player]
+        local text = ESPAdvancedData.DistanceTexts[player]
+
         if distance > espDistance then
-            if ESPAdvancedData.DistanceLines[player] then ESPAdvancedData.DistanceLines[player].Visible = false end
-            if ESPAdvancedData.DistanceTexts[player] then ESPAdvancedData.DistanceTexts[player].Visible = false end
+            if line then line.Visible = false end
+            if text then text.Visible = false end
             return
         end
 
         local enemyPos = Camera:WorldToViewportPoint(rootPart.Position)
         local playerPos = Camera:WorldToViewportPoint(localRoot.Position)
 
--- Linha de distância (só desenha se o inimigo estiver no campo de visão)
-if ESPAdvancedData.DistanceLines[player] then
-    if DistanceLineEnabled and enemyPos.Z > 0 and playerPos.Z > 0 then
-        ESPAdvancedData.DistanceLines[player].Visible = true
-        ESPAdvancedData.DistanceLines[player].From = Vector2.new(playerPos.X, playerPos.Y)
-        ESPAdvancedData.DistanceLines[player].To = Vector2.new(enemyPos.X, enemyPos.Y)
-    else
-        ESPAdvancedData.DistanceLines[player].Visible = false
-    end
-end
+        if line then
+            line.Visible = DistanceLineEnabled and enemyPos.Z > 0 and playerPos.Z > 0
+            if line.Visible then
+                line.From = Vector2.new(playerPos.X, playerPos.Y)
+                line.To = Vector2.new(enemyPos.X, enemyPos.Y)
+            end
+        end
 
-        -- Texto de distância embaixo do player
-        if ESPAdvancedData.DistanceTexts[player] then
-            ESPAdvancedData.DistanceTexts[player].Visible = DistanceTextEnabled
-            ESPAdvancedData.DistanceTexts[player].Position = Vector2.new(enemyPos.X, enemyPos.Y + 15) -- 15 pixels abaixo
-            ESPAdvancedData.DistanceTexts[player].Text = string.format("[%.1fm]", distance)
+        if text then
+            text.Visible = DistanceTextEnabled and enemyPos.Z > 0
+            text.Position = Vector2.new(enemyPos.X, enemyPos.Y + 15)
+            text.Text = string.format("[%.1fm]", distance)
         end
     end
 end
 
 -- Loop principal de atualização --------------------------------------------------------------------
-game:GetService("RunService").RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             updateSkeleton(player)
@@ -1329,9 +1336,9 @@ end)
 -- Gerenciamento de jogadores -----------------------------------------------------------------------
 local function addPlayer(player)
     ESPAdvancedData.Skeletons[player] = createSkeleton(player)
-    ESPAdvancedData.HeadCircles[player] = createHeadCircle(player)
-    ESPAdvancedData.DistanceLines[player] = createDistanceLine(player)
-    ESPAdvancedData.DistanceTexts[player] = createDistanceText(player)
+    ESPAdvancedData.HeadCircles[player] = createHeadCircle()
+    ESPAdvancedData.DistanceLines[player] = createDistanceLine()
+    ESPAdvancedData.DistanceTexts[player] = createDistanceText()
 end
 
 local function removePlayer(player)
@@ -1355,10 +1362,9 @@ Players.PlayerAdded:Connect(function(player)
     end)
 end)
 
-Players.PlayerRemoving:Connect(function(player)
-    removePlayer(player)
-end)
+Players.PlayerRemoving:Connect(removePlayer)
 
+-- UI (WallTab) --------------------------------------------------------------------------------------
 WallTab:AddToggle({
     Name = "Head",
     Default = false,
@@ -1401,8 +1407,7 @@ WallTab:AddSlider({
     ValueName = "Tamanho",
     Callback = function(Value)
         nameTagSize = Value
-        -- Atualizar nametags existentes
-        for playerName, nametag in pairs(NameTags) do
+        for _, nametag in pairs(NameTags) do
             nametag.Size = Value
         end
     end
@@ -1440,25 +1445,22 @@ WallTab:AddColorpicker({
     Name = "Colors",
     Default = Color3.new(1, 1, 1),
     Callback = function(color)
-        -- Atualizar variáveis principais
+        ESPAdvancedColor = color
         nameTagColor = color
         boxColor = color
         chamFillColor = color
-        ESPAdvancedColor = color
 
-        -- Atualizar NameTags
         for _, nametag in pairs(NameTags) do
             nametag.Color = color
         end
 
-        -- Atualizar Boxes
         for _, box in pairs(ESPObjects) do
             box.Color = color
         end
 
-        -- Atualizar Chams
-        if game.CoreGui:FindFirstChild("Highlight_Storage") then
-            for _, highlight in pairs(game.CoreGui.Highlight_Storage:GetChildren()) do
+        local highlightStorage = game.CoreGui:FindFirstChild("Highlight_Storage")
+        if highlightStorage then
+            for _, highlight in pairs(highlightStorage:GetChildren()) do
                 if highlight:IsA("Highlight") then
                     highlight.FillColor = color
                     highlight.OutlineColor = color
@@ -1466,8 +1468,7 @@ WallTab:AddColorpicker({
             end
         end
 
-        -- Atualizar elementos avançados (Skeleton, HeadCircle, DistanceLines, DistanceTexts)
-        for _, player in pairs(Players:GetPlayers()) do
+        for _, player in ipairs(Players:GetPlayers()) do
             if ESPAdvancedData.Skeletons[player] then
                 for _, line in pairs(ESPAdvancedData.Skeletons[player]) do
                     line.Color = color
