@@ -990,7 +990,7 @@ end
 -- Bind configurável
 ConfigTab:AddBind({
     Name = "Travar/Destravar O Mouse",
-    Default = Enum.KeyCode.V,
+    Default = Enum.KeyCode.K,
     Hold = false,
     Callback = function()
         toggleMouseLock()
