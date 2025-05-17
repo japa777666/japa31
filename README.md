@@ -4,6 +4,7 @@ local Window = OrionLib:MakeWindow({Name = "💎Japa Menu V3.4", HidePremium = f
 
 -- Variáveis de controle
 local flyEnabled = false
+local espDistance = 500 -- Distância máxima para renderizar qualquer ESP
 local isFlying = false
 local speed = 20
 local bodyVelocity, bodyGyro, connection
@@ -182,8 +183,13 @@ local function CreateBox()
 end
 
 local function UpdateBox(box, rootPart)
+    local localChar = game.Players.LocalPlayer.Character
+    if not localChar or not localChar:FindFirstChild("HumanoidRootPart") then return end
+
+    local distance = (rootPart.Position - localChar.HumanoidRootPart.Position).Magnitude
     local viewportPoint, onScreen = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-    if onScreen then
+
+    if onScreen and distance <= espDistance then
         local size = Vector2.new(2000 / viewportPoint.Z, 4000 / viewportPoint.Z)
         box.Size = size
         box.Position = Vector2.new(viewportPoint.X - size.X / 2, viewportPoint.Y - size.Y / 2)
@@ -253,12 +259,15 @@ end
 
 
 local function UpdateNameTag(nametag, rootPart)
+    local localChar = game.Players.LocalPlayer.Character
+    if not localChar or not localChar:FindFirstChild("HumanoidRootPart") then return end
+
+    local distance = (rootPart.Position - localChar.HumanoidRootPart.Position).Magnitude
     local viewportPoint, onScreen = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-    if onScreen then
+
+    nametag.Visible = onScreen and distance <= espDistance
+    if nametag.Visible then
         nametag.Position = Vector2.new(viewportPoint.X, viewportPoint.Y - 20)
-        nametag.Visible = true
-    else
-        nametag.Visible = false
     end
 end
 
@@ -1175,6 +1184,7 @@ local SkeletonEnabled = false
 local HeadCircleEnabled = false
 local DistanceTextEnabled = false
 local ESPAdvancedColor = Color3.new(1, 1, 1)
+local espDistance = 1000 -- Distância máxima do ESP
 local ESPAdvancedData = {
     Skeletons = {},
     HeadCircles = {},
@@ -1192,7 +1202,7 @@ local function createSkeleton(player)
         {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
         {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
     }
-    
+
     local skeleton = {}
     for _, pair in ipairs(parts) do
         local line = Drawing.new("Line")
@@ -1239,11 +1249,11 @@ local function updateSkeleton(player)
         local parts = boneName:split("-")
         local part1 = character:FindFirstChild(parts[1])
         local part2 = character:FindFirstChild(parts[2])
-        
-        if part1 and part2 then
+
+        if part1 and part2 and (part1.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= espDistance then
             local pos1 = Camera:WorldToViewportPoint(part1.Position)
             local pos2 = Camera:WorldToViewportPoint(part2.Position)
-            
+
             line.Visible = SkeletonEnabled and pos1.Z > 0 and pos2.Z > 0
             line.From = Vector2.new(pos1.X, pos1.Y)
             line.To = Vector2.new(pos2.X, pos2.Y)
@@ -1258,9 +1268,11 @@ local function updateHeadCircle(player)
     if not character or not ESPAdvancedData.HeadCircles[player] then return end
 
     local head = character:FindFirstChild("Head")
-    if head then
+    local localChar = LocalPlayer.Character
+    if head and localChar and localChar:FindFirstChild("HumanoidRootPart") then
         local pos = Camera:WorldToViewportPoint(head.Position)
-        ESPAdvancedData.HeadCircles[player].Visible = HeadCircleEnabled and pos.Z > 0
+        local distance = (head.Position - localChar.HumanoidRootPart.Position).Magnitude
+        ESPAdvancedData.HeadCircles[player].Visible = HeadCircleEnabled and pos.Z > 0 and distance <= espDistance
         ESPAdvancedData.HeadCircles[player].Position = Vector2.new(pos.X, pos.Y)
     end
 end
@@ -1274,6 +1286,12 @@ local function updateDistanceElements(player)
     local localHead = localChar:FindFirstChild("Head")
     if head and localHead then
         local distance = (head.Position - localHead.Position).Magnitude
+        if distance > espDistance then
+            if ESPAdvancedData.DistanceLines[player] then ESPAdvancedData.DistanceLines[player].Visible = false end
+            if ESPAdvancedData.DistanceTexts[player] then ESPAdvancedData.DistanceTexts[player].Visible = false end
+            return
+        end
+
         local headPos = Camera:WorldToViewportPoint(head.Position)
         local localPos = Camera:WorldToViewportPoint(localHead.Position)
 
@@ -1337,6 +1355,7 @@ Players.PlayerRemoving:Connect(function(player)
     removePlayer(player)
 end)
 
+
 WallTab:AddToggle({
     Name = "Head",
     Default = false,
@@ -1398,6 +1417,19 @@ WallTab:AddSlider({
         for _, text in pairs(ESPAdvancedData.DistanceTexts) do
             text.Size = Value
         end
+    end
+})
+
+WallTab:AddSlider({
+    Name = "Distância do ESP",
+    Min = 50,
+    Max = 1000,
+    Default = 500,
+    Color = Color3.fromRGB(119, 18, 169),
+    Increment = 25,
+    ValueName = "Studs",
+    Callback = function(value)
+        espDistance = value
     end
 })
 
