@@ -1184,7 +1184,6 @@ local SkeletonEnabled = false
 local HeadCircleEnabled = false
 local DistanceTextEnabled = false
 local ESPAdvancedColor = Color3.new(1, 1, 1)
-local espDistance = 1000 -- Distância máxima do ESP
 local ESPAdvancedData = {
     Skeletons = {},
     HeadCircles = {},
@@ -1202,7 +1201,7 @@ local function createSkeleton(player)
         {"LowerTorso", "LeftUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
         {"LowerTorso", "RightUpperLeg"}, {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}
     }
-
+    
     local skeleton = {}
     for _, pair in ipairs(parts) do
         local line = Drawing.new("Line")
@@ -1249,11 +1248,11 @@ local function updateSkeleton(player)
         local parts = boneName:split("-")
         local part1 = character:FindFirstChild(parts[1])
         local part2 = character:FindFirstChild(parts[2])
-
-        if part1 and part2 and (part1.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= espDistance then
+        
+if part1 and part2 and (part1.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= espDistance then
             local pos1 = Camera:WorldToViewportPoint(part1.Position)
             local pos2 = Camera:WorldToViewportPoint(part2.Position)
-
+            
             line.Visible = SkeletonEnabled and pos1.Z > 0 and pos2.Z > 0
             line.From = Vector2.new(pos1.X, pos1.Y)
             line.To = Vector2.new(pos2.X, pos2.Y)
@@ -1268,11 +1267,10 @@ local function updateHeadCircle(player)
     if not character or not ESPAdvancedData.HeadCircles[player] then return end
 
     local head = character:FindFirstChild("Head")
-    local localChar = LocalPlayer.Character
-    if head and localChar and localChar:FindFirstChild("HumanoidRootPart") then
+    if head then
         local pos = Camera:WorldToViewportPoint(head.Position)
-        local distance = (head.Position - localChar.HumanoidRootPart.Position).Magnitude
-        ESPAdvancedData.HeadCircles[player].Visible = HeadCircleEnabled and pos.Z > 0 and distance <= espDistance
+local distance = (head.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+ESPAdvancedData.HeadCircles[player].Visible = HeadCircleEnabled and pos.Z > 0 and distance <= espDistance
         ESPAdvancedData.HeadCircles[player].Position = Vector2.new(pos.X, pos.Y)
     end
 end
@@ -1285,7 +1283,8 @@ local function updateDistanceElements(player)
     local head = character:FindFirstChild("Head")
     local localHead = localChar:FindFirstChild("Head")
     if head and localHead then
-        local distance = (head.Position - localHead.Position).Magnitude
+        local distance = (head.Position - localHead.Position).Magnitude -- Corrigido aqui!
+
         if distance > espDistance then
             if ESPAdvancedData.DistanceLines[player] then ESPAdvancedData.DistanceLines[player].Visible = false end
             if ESPAdvancedData.DistanceTexts[player] then ESPAdvancedData.DistanceTexts[player].Visible = false end
@@ -1354,7 +1353,6 @@ end)
 Players.PlayerRemoving:Connect(function(player)
     removePlayer(player)
 end)
-
 
 WallTab:AddToggle({
     Name = "Head",
