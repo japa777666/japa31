@@ -1280,10 +1280,11 @@ local function updateDistanceElements(player)
     local localChar = LocalPlayer.Character
     if not character or not localChar then return end
 
-    local head = character:FindFirstChild("Head")
-    local localHead = localChar:FindFirstChild("Head")
-    if head and localHead then
-        local distance = (head.Position - localHead.Position).Magnitude -- Corrigido aqui!
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("LowerTorso")
+    local localRoot = localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("LowerTorso")
+    
+    if rootPart and localRoot then
+        local distance = (rootPart.Position - localRoot.Position).Magnitude
 
         if distance > espDistance then
             if ESPAdvancedData.DistanceLines[player] then ESPAdvancedData.DistanceLines[player].Visible = false end
@@ -1291,20 +1292,20 @@ local function updateDistanceElements(player)
             return
         end
 
-        local headPos = Camera:WorldToViewportPoint(head.Position)
-        local localPos = Camera:WorldToViewportPoint(localHead.Position)
+        local enemyPos = Camera:WorldToViewportPoint(rootPart.Position)
+        local playerPos = Camera:WorldToViewportPoint(localRoot.Position)
 
         -- Linha de distância
         if ESPAdvancedData.DistanceLines[player] then
             ESPAdvancedData.DistanceLines[player].Visible = DistanceLineEnabled
-            ESPAdvancedData.DistanceLines[player].From = Vector2.new(localPos.X, localPos.Y)
-            ESPAdvancedData.DistanceLines[player].To = Vector2.new(headPos.X, headPos.Y)
+            ESPAdvancedData.DistanceLines[player].From = Vector2.new(playerPos.X, playerPos.Y)
+            ESPAdvancedData.DistanceLines[player].To = Vector2.new(enemyPos.X, enemyPos.Y)
         end
 
-        -- Texto de distância
+        -- Texto de distância embaixo do player
         if ESPAdvancedData.DistanceTexts[player] then
             ESPAdvancedData.DistanceTexts[player].Visible = DistanceTextEnabled
-            ESPAdvancedData.DistanceTexts[player].Position = Vector2.new(headPos.X, headPos.Y + 20)
+            ESPAdvancedData.DistanceTexts[player].Position = Vector2.new(enemyPos.X, enemyPos.Y + 15) -- 15 pixels abaixo
             ESPAdvancedData.DistanceTexts[player].Text = string.format("[%.1fm]", distance)
         end
     end
@@ -1480,7 +1481,6 @@ WallTab:AddColorpicker({
         end
     end
 })
-
 
 -- Inicialização para jogadores existentes
 for _, player in ipairs(Players:GetPlayers()) do
